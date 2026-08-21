@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>빈틈 - 공간 혼잡도 제보 PoC</title>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 550px; margin: 30px auto; padding: 20px; background-color: #f8f9fa; }
+    .card { border: 1px solid #e0e0e0; padding: 20px; margin-bottom: 20px; border-radius: 12px; background: #ffffff; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+    .status-badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-weight: bold; font-size: 14px; margin-left: 5px; }
+    .status-부족 { background-color: #e2e8f0; color: #4a5568; }
+    .status-여유 { background-color: #c6f6d5; color: #22543d; }
+    .status-보통 { background-color: #feebc8; color: #744210; }
+    .status-혼잡 { background-color: #fed7d7; color: #742a2a; }
+    
+    .form-group { margin-top: 15px; padding-top: 15px; border-top: 1px dashed #e0e0e0; }
+    .form-group label { display: block; font-size: 13px; font-weight: bold; color: #4a5568; margin-bottom: 6px; }
+    .form-control { width: 100%; padding: 8px; border: 1px solid #cbd5e0; border-radius: 6px; box-sizing: border-box; margin-bottom: 10px; font-size: 13px; }
+    
+    .btn-group { display: flex; gap: 8px; margin-top: 8px; }
+    .btn { flex: 1; padding: 10px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+    .btn-easy { background-color: #48bb78; color: white; }
+    .btn-normal { background-color: #ed8936; color: white; }
+    .btn-busy { background-color: #e53e3e; color: white; }
+    .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+
+    .info-text { font-size: 12px; color: #718096; margin-top: 10px; line-height: 1.5; }
+  </style>
+</head>
+<body>
+
+  <h2>☕ 빈틈 - 카페 공간 제보 (PoC)</h2>
+  
+  <div class="card">
+    <h3 style="margin-top:0;">📍 1호점: 투썸플레이스 대학로점</h3>
+    
+    <p>현재 혼잡도: <span id="status-badge" class="status-badge status-부족">정보 부족</span></p>
+    <p>신뢰도: <strong id="trust-level">측정 불가</strong></p>
+    
+    <!-- 사용자 제보 입력 폼 -->
+    <div class="form-group">
+      <h4>📝 실시간 현장 제보하기</h4>
+      
+      <label for="nickname">제보자 닉네임</label>
+      <input type="text" id="nickname" class="form-control" placeholder="예: 카공족123 (미입력 시 익명)">
+      
+      <label for="noise">매장 소음 정도</label>
+      <select id="noise" class="form-control">
+        <option value="조용함">조용함 (공부하기 좋음)</option>
+        <option value="보통" selected>보통 (일반 대화)</option>
+        <option value="시끄러움">시끄러움 (소음 큼)</option>
+      </select>
+
+      <label>현재 좌석 혼잡도 선택 (필수)</label>
+      <div class="btn-group">
+        <button class="btn btn-easy" onclick="submitReport('여유')">🟢 여유</button>
+        <button class="btn btn-normal" onclick="submitReport('보통')">🟡 보통</button>
+        <button class="btn btn-busy" onclick="submitReport('혼잡')">🔴 혼잡</button>
+      </div>
+    </div>
+
+    <div class="info-text" id="log-summary">
+      최근 60분 내 유효 제보가 없습니다. (최소 3건 필요)
+    </div>
+  </div>
+
+  <script>
+    // 제보 데이터 저장용 배열
+    const reports = [];
+
+    function submitReport(selectedStatus) {
+      const nickname = document.getElementById('nickname').value.trim() || '익명';
+      const noise = document.getElementById('noise').value;
+      const now = new Date();
+
+      // 제보 객체 생성 후 추가
+      reports.push({
+        user: nickname,
+        status: selectedStatus,
+        noise: noise,
+        time: now
+      });
+
+      // 입력란 초기화 및 혼잡도 재계산
+      document.getElementById('nickname').value = '';
+      alert(`[${nickname}]님의 [${selectedStatus}] 제보가 등록되었습니다!`);
+      
+      updateCafeStatus();
+    }
+
+    function updateCafeStatus() {
+      const now = new Date();
+      // 1. 최근 60분 이내 제보만 필터링
+      const validReports = reports.filter(r => (now - r.time) / 1000 / 60 <= 60);
+
+      const badgeEl = document.getElementById('status-badge');
+      const trustEl = document.getElementById('trust-level');
+      const logEl = document.getElementById('log-summary');
+
+      // 2. 최소 제보 수 3건 미만 판단
+      if (validReports.length < 3) {
+        badgeEl.innerText = "정보 부족";
+        badgeEl.className = "status-badge status-부족";
+        trustEl.innerText = "측정 불가 (최소 3건 필요)";
+        logEl.innerHTML = `현재 누적 제보: <strong>${validReports.length}건</strong> (3건 이상 시 현재 혼잡도가 산출됩니다.)`;
+        return;
+      }
+
+      // 3. 상태별 집계
+      const counts = { '여유': 0, '보통': 0, '혼잡': 0 };
+      validReports.forEach(r => counts[r.status]++);
+
+      let maxStatus = '보통';
+      let maxCount = -1;
+      let isTie = false;
+
+      for (const [status, count] of Object.entries(counts)) {
+        if (count > maxCount) {
+          maxCount = count;
+          maxStatus = status;
+          isTie = false;
+        } else if (count === maxCount && count > 0) {
+          isTie = true;
+        }
+      }
+
+      // 4. 동점 시 최신 제보 기준 적용
+      if (isTie) {
+        maxStatus = validReports[validReports.length - 1].status;
+        trustEl.innerText = "참고 정보 (의견 엇갈림)";
+      } else {
+        trustEl.innerText = validReports.length >= 5 ? "높음" : "보통";
+      }
+
+      // UI 반영
+      badgeEl.innerText = maxStatus;
+      badgeEl.className = `status-badge status-${maxStatus}`;
+      logEl.innerHTML = `<strong>최근 60분 내 제보: ${validReports.length}건</strong><br>
+        (여유: ${counts['여유']} | 보통: ${counts['보통']} | 혼잡: ${counts['혼잡']})`;
+    }
+  </script>
+</body>
+</html>
