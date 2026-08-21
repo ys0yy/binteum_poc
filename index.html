@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>빈틈 - 카페 혼잡도 PoC</title>
+  <style>
+    body { font-family: sans-serif; max-width: 500px; margin: 30px auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
+    .card { border: 1px solid #eee; padding: 15px; margin-bottom: 15px; border-radius: 6px; background: #fafafa; }
+    .status { font-weight: bold; color: #2b6cb0; }
+    button { margin-right: 5px; padding: 6px 12px; cursor: pointer; }
+    .log { font-size: 12px; color: #666; margin-top: 10px; }
+  </style>
+</head>
+<body>
+
+  <h2>☕ 카페 혼잡도 제보 (PoC)</h2>
+  
+  <div class="card">
+    <h3>1호점: 카공 카페 (디저트 39)</h3>
+    <p>현재 상태: <span id="status-1" class="status">정보 부족</span></p>
+    <p>신뢰도: <span id="trust-1">-</span></p>
+    <div>
+      제보하기: 
+      <button onclick="addReport(1, '여유')">🟢 여유</button>
+      <button onclick="addReport(1, '보통')">🟡 보통</button>
+      <button onclick="addReport(1, '혼잡')">🔴 혼잡</button>
+    </div>
+    <div class="log" id="log-1">최근 제보 기록이 없습니다.</div>
+  </div>
+
+  <script>
+    // 카페별 제보 데이터를 담을 더미 배열
+    const reports = { 1: [] };
+
+    function addReport(cafeId, value) {
+      const now = new Date();
+      // 제보 데이터 추가 (시간과 상태 저장)
+      reports[cafeId].push({ value: value, time: now });
+      
+      // 혼잡도 다시 계산
+      calculateStatus(cafeId);
+    }
+
+    function calculateStatus(cafeId) {
+      const cafeReports = reports[cafeId];
+      const now = new Date();
+      
+      // 1. [기준] 최근 60분 이내 제보만 필터링 (초 단위로 계산)
+      const validReports = cafeReports.filter(r => (now - r.time) / 1000 / 60 <= 60);
+
+      const statusEl = document.getElementById(`status-${cafeId}`);
+      const trustEl = document.getElementById(`trust-${cafeId}`);
+      const logEl = document.getElementById(`log-${cafeId}`);
+
+      // 2. [기준] 최소 제보 수 3건 미만일 때 -> '정보 부족'
+      if (validReports.length < 3) {
+        statusEl.innerText = "정보 부족";
+        trustEl.innerText = "측정 불가 (최소 3건 필요)";
+        logEl.innerText = `현재 제보 건수: ${validReports.length}건`;
+        return;
+      }
+
+      // 3. 상태별(여유/보통/혼잡) 개수 집계
+      const counts = { '여유': 0, '보통': 0, '혼잡': 0 };
+      validReports.forEach(r => counts[r.value]++);
+
+      // 최다 제보 상태 찾기
+      let maxStatus = '보통';
+      let maxCount = -1;
+      let isTie = false;
+
+      for (const [status, count] of Object.entries(counts)) {
+        if (count > maxCount) {
+          maxCount = count;
+          maxStatus = status;
+          isTie = false;
+        } else if (count === maxCount && count > 0) {
+          isTie = true; // 동점 발생
+        }
+      }
+
+      // 4. [기준] 동점일 경우 가장 최근 등록된 제보 상태로 결정
+      if (isTie) {
+        maxStatus = validReports[validReports.length - 1].value;
+        trustEl.innerText = "참고 정보 (의견 엇갈림)";
+      } else {
+        trustEl.innerText = validReports.length >= 5 ? "높음" : "보통";
+      }
+
+      // 화면 업데이트
+      statusEl.innerText = maxStatus;
+      logEl.innerText = `최근 60분 내 제보: ${validReports.length}건 (여유:${counts['여유']}, 보통:${counts['보통']}, 혼잡:${counts['혼잡']})`;
+    }
+  </script>
+</body>
+</html>
