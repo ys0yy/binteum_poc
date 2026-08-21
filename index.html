@@ -2,141 +2,131 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>빈틈 - 공간 혼잡도 제보 PoC</title>
+  <title>빈틈 - 혼잡도 제보 테스트</title>
   <style>
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 550px; margin: 30px auto; padding: 20px; background-color: #f8f9fa; }
-    .card { border: 1px solid #e0e0e0; padding: 20px; margin-bottom: 20px; border-radius: 12px; background: #ffffff; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-    .status-badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-weight: bold; font-size: 14px; margin-left: 5px; }
-    .status-부족 { background-color: #e2e8f0; color: #4a5568; }
-    .status-여유 { background-color: #c6f6d5; color: #22543d; }
-    .status-보통 { background-color: #feebc8; color: #744210; }
-    .status-혼잡 { background-color: #fed7d7; color: #742a2a; }
-    
-    .form-group { margin-top: 15px; padding-top: 15px; border-top: 1px dashed #e0e0e0; }
-    .form-group label { display: block; font-size: 13px; font-weight: bold; color: #4a5568; margin-bottom: 6px; }
-    .form-control { width: 100%; padding: 8px; border: 1px solid #cbd5e0; border-radius: 6px; box-sizing: border-box; margin-bottom: 10px; font-size: 13px; }
-    
-    .btn-group { display: flex; gap: 8px; margin-top: 8px; }
-    .btn { flex: 1; padding: 10px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-    .btn-easy { background-color: #48bb78; color: white; }
-    .btn-normal { background-color: #ed8936; color: white; }
-    .btn-busy { background-color: #e53e3e; color: white; }
-    .btn:hover { opacity: 0.9; transform: translateY(-1px); }
-
-    .info-text { font-size: 12px; color: #718096; margin-top: 10px; line-height: 1.5; }
+    body { font-family: sans-serif; max-width: 500px; margin: 30px auto; padding: 20px; background: #f8f9fa; }
+    .card { border: 1px solid #ddd; padding: 20px; border-radius: 10px; background: white; }
+    .status { font-weight: bold; font-size: 18px; color: #2b6cb0; }
+    .btn-group { display: flex; gap: 8px; margin-top: 10px; }
+    button { flex: 1; padding: 10px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; color: white; }
+    .btn-여유 { background: #48bb78; }
+    .btn-보통 { background: #ed8936; }
+    .btn-혼잡 { background: #e53e3e; }
+    .info { font-size: 13px; color: #666; margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px; }
   </style>
 </head>
 <body>
 
-  <h2>☕ 빈틈 - 카페 공간 제보 (PoC)</h2>
-  
-  <div class="card">
-    <h3 style="margin-top:0;">📍 1호점: 투썸플레이스 대학로점</h3>
-    
-    <p>현재 혼잡도: <span id="status-badge" class="status-badge status-부족">정보 부족</span></p>
-    <p>신뢰도: <strong id="trust-level">측정 불가</strong></p>
-    
-    <!-- 사용자 제보 입력 폼 -->
-    <div class="form-group">
-      <h4>📝 실시간 현장 제보하기</h4>
-      
-      <label for="nickname">제보자 닉네임</label>
-      <input type="text" id="nickname" class="form-control" placeholder="예: 카공족123 (미입력 시 익명)">
-      
-      <label for="noise">매장 소음 정도</label>
-      <select id="noise" class="form-control">
-        <option value="조용함">조용함 (공부하기 좋음)</option>
-        <option value="보통" selected>보통 (일반 대화)</option>
-        <option value="시끄러움">시끄러움 (소음 큼)</option>
-      </select>
+  <h2>☕ 카페 혼잡도 제보 (PoC)</h2>
 
-      <label>현재 좌석 혼잡도 선택 (필수)</label>
-      <div class="btn-group">
-        <button class="btn btn-easy" onclick="submitReport('여유')">🟢 여유</button>
-        <button class="btn btn-normal" onclick="submitReport('보통')">🟡 보통</button>
-        <button class="btn btn-busy" onclick="submitReport('혼잡')">🔴 혼잡</button>
-      </div>
+  <div class="card">
+    <h3>📍 1호점: 투썸플레이스 대학로점</h3>
+    
+    <p>현재 혼잡도: <span id="혼잡도표시" class="status">정보 부족</span></p>
+    <p>신뢰도: <strong id="신뢰도표시">측정 불가</strong></p>
+
+    <hr>
+
+    <p><strong>실시간 제보하기</strong></p>
+    <div>
+      닉네임: <input type="text" id="닉네임" placeholder="익명">
     </div>
 
-    <div class="info-text" id="log-summary">
-      최근 60분 내 유효 제보가 없습니다. (최소 3건 필요)
+    <div class="btn-group">
+      <button class="btn-여유" onclick="제보하기('여유')">🟢 여유</button>
+      <button class="btn-보통" onclick="제보하기('보통')">🟡 보통</button>
+      <button class="btn-혼잡" onclick="제보하기('혼잡')">🔴 혼잡</button>
+    </div>
+
+    <div class="info" id="상태설명">
+      제보가 3건 이상 누적되어야 현재 혼잡도가 계산됩니다.
     </div>
   </div>
 
   <script>
-    // 제보 데이터 저장용 배열
-    const reports = [];
+    // 제보 데이터를 담아둘 리스트
+    let 제보목록 = [];
 
-    function submitReport(selectedStatus) {
-      const nickname = document.getElementById('nickname').value.trim() || '익명';
-      const noise = document.getElementById('noise').value;
-      const now = new Date();
-
-      // 제보 객체 생성 후 추가
-      reports.push({
-        user: nickname,
-        status: selectedStatus,
-        noise: noise,
-        time: now
-      });
-
-      // 입력란 초기화 및 혼잡도 재계산
-      document.getElementById('nickname').value = '';
-      alert(`[${nickname}]님의 [${selectedStatus}] 제보가 등록되었습니다!`);
-      
-      updateCafeStatus();
-    }
-
-    function updateCafeStatus() {
-      const now = new Date();
-      // 1. 최근 60분 이내 제보만 필터링
-      const validReports = reports.filter(r => (now - r.time) / 1000 / 60 <= 60);
-
-      const badgeEl = document.getElementById('status-badge');
-      const trustEl = document.getElementById('trust-level');
-      const logEl = document.getElementById('log-summary');
-
-      // 2. 최소 제보 수 3건 미만 판단
-      if (validReports.length < 3) {
-        badgeEl.innerText = "정보 부족";
-        badgeEl.className = "status-badge status-부족";
-        trustEl.innerText = "측정 불가 (최소 3건 필요)";
-        logEl.innerHTML = `현재 누적 제보: <strong>${validReports.length}건</strong> (3건 이상 시 현재 혼잡도가 산출됩니다.)`;
-        return;
+    // [기능 1] 버튼을 누르면 제보 저장하기
+    function 제보하기(선택한상태) {
+      let 입력닉네임 = document.getElementById('닉네임').value;
+      if (입력닉네임 === '') {
+        입력닉네임 = '익명';
       }
 
-      // 3. 상태별 집계
-      const counts = { '여유': 0, '보통': 0, '혼잡': 0 };
-      validReports.forEach(r => counts[r.status]++);
+      // 제보 정보 추가
+      제보목록.push({
+        이름: 입력닉네임,
+        상태: 선택한상태,
+        시간: new Date() // 현재 시간 저장
+      });
 
-      let maxStatus = '보통';
-      let maxCount = -1;
-      let isTie = false;
+      alert(입력닉네임 + '님의 [' + 선택한상태 + '] 제보가 완료되었습니다!');
+      document.getElementById('닉네임').value = ''; // 입력창 비우기
 
-      for (const [status, count] of Object.entries(counts)) {
-        if (count > maxCount) {
-          maxCount = count;
-          maxStatus = status;
-          isTie = false;
-        } else if (count === maxCount && count > 0) {
-          isTie = true;
+      // 혼잡도 다시 계산하기
+      혼잡도계산하기();
+    }
+
+    // [기능 2] 제보 데이터를 바탕으로 혼잡도 계산하기
+    function 혼잡도계산하기() {
+      let 현재시간 = new Date();
+      let 최근제보목록 = [];
+
+      // 1. 최근 60분 이내 제보만 골라내기 (쉬운 for문 사용)
+      for (let i = 0; i < 제보목록.length; i++) {
+        let 지나간시간분 = (현재시간 - 제보목록[i].시간) / 1000 / 60;
+        if (지나간시간분 <= 60) {
+          최근제보목록.push(제보목록[i]);
         }
       }
 
-      // 4. 동점 시 최신 제보 기준 적용
-      if (isTie) {
-        maxStatus = validReports[validReports.length - 1].status;
-        trustEl.innerText = "참고 정보 (의견 엇갈림)";
-      } else {
-        trustEl.innerText = validReports.length >= 5 ? "높음" : "보통";
+      let 혼잡도글자 = document.getElementById('혼잡도표시');
+      let 신뢰도글자 = document.getElementById('신뢰도표시');
+      let 설명글자 = document.getElementById('상태설명');
+
+      // 2. 제보가 3건 미만이면 '정보 부족' 처리
+      if (최근제보목록.length < 3) {
+        혼잡도글자.innerText = "정보 부족";
+        신뢰도글자.innerText = "측정 불가 (최소 3건 필요)";
+        설명글자.innerHTML = "현재 제보 건수: <b>" + 최근제보목록.length + "건</b> (3건 이상 필요)";
+        return;
       }
 
-      // UI 반영
-      badgeEl.innerText = maxStatus;
-      badgeEl.className = `status-badge status-${maxStatus}`;
-      logEl.innerHTML = `<strong>최근 60분 내 제보: ${validReports.length}건</strong><br>
-        (여유: ${counts['여유']} | 보통: ${counts['보통']} | 혼잡: ${counts['혼잡']})`;
+      // 3. 각 상태별 개수 세기
+      let 여유개수 = 0;
+      let 보통개수 = 0;
+      let 혼잡개수 = 0;
+
+      for (let i = 0; i < 최근제보목록.length; i++) {
+        if (최근제보목록[i].상태 === '여유') 여유개수++;
+        if (최근제보목록[i].상태 === '보통') 보통개수++;
+        if (최근제보목록[i].상태 === '혼잡') 혼잡개수++;
+      }
+
+      // 4. 가장 많은 제보 상태 구하기
+      let 최종상태 = '보통';
+
+      if (여유개수 > 보통개수 && 여유개수 > 혼잡개수) {
+        최종상태 = '여유';
+        신뢰도글자.innerText = 최근제보목록.length >= 5 ? "높음" : "보통";
+      } else if (보통개수 > 여유개수 && 보통개수 > 혼잡개수) {
+        최종상태 = '보통';
+        신뢰도글자.innerText = 최근제보목록.length >= 5 ? "높음" : "보통";
+      } else if (혼잡개수 > 여유개수 && 혼잡개수 > 보통개수) {
+        최종상태 = '혼잡';
+        신뢰도글자.innerText = 최근제보목록.length >= 5 ? "높음" : "보통";
+      } else {
+        // 동점일 경우: 가장 최근에 등록된 제보 상태로 결정
+        let 가장최신제보 = 최근제보목록[최근제보목록.length - 1];
+        최종상태 = 가장최신제보.상태;
+        신뢰도글자.innerText = "참고 정보 (의견 엇갈림)";
+      }
+
+      // 화면에 결과 보여주기
+      혼잡도글자.innerText = 최종상태;
+      설명글자.innerHTML = "<b>최근 60분 제보: " + 최근제보목록.length + "건</b><br>" +
+        "(여유: " + 여유개수 + " | 보통: " + 보통개수 + " | 혼잡: " + 혼잡개수 + ")";
     }
   </script>
 </body>
